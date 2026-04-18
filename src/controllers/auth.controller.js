@@ -1,6 +1,6 @@
-import bcrypt from 'bcryptjs';
-import { User } from '../models/user.model.js';
-import { signToken } from '../utils/jwt.js';
+import bcrypt from "bcryptjs";
+import { User } from "../models/user.model.js";
+import { signToken } from "../utils/jwt.js";
 
 /**
  * TODO: Register a new user
@@ -14,6 +14,38 @@ import { signToken } from '../utils/jwt.js';
 export async function register(req, res, next) {
   try {
     // Your code here
+
+    const { email, name, password } = req.body;
+    if (!name || !email || !password) {
+      return res
+        .status(400)
+        .json({ error: { message: "Name, email and password are required" } });
+    }
+
+    const emailValidation = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (emailValidation.test(email) === false) {
+      return res
+        .status(400)
+        .json({ error: { meesage: "Email should be in valid format" } });
+    }
+
+    if (password.length < 6) {
+      return res
+        .status(400)
+        .json({ error: { message: "Password must be at least 6 characters" } });
+    }
+
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res
+        .status(409)
+        .json({ error: { message: "Email already exists" } });
+    }
+
+    const newUser = await User.create({ name, email, password });
+    res.status(201).json({ user: newUser });
+
+    await newUser.save();
   } catch (error) {
     next(error);
   }

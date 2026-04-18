@@ -42,10 +42,16 @@ export async function register(req, res, next) {
         .json({ error: { message: "Email already exists" } });
     }
 
-    const newUser = await User.create({ name, email, password });
-    res.status(201).json({ user: newUser });
+    const newUser = await User.create({
+      name,
+      email: email.toLowerCase(),
+      password,
+    });
 
-    await newUser.save();
+    const newResponse = newUser.toObject();
+    delete newResponse.password;
+
+    res.status(201).json({ user: newResponse });
   } catch (error) {
     next(error);
   }

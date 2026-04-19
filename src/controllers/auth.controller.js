@@ -26,7 +26,7 @@ export async function register(req, res, next) {
     if (emailValidation.test(email) === false) {
       return res
         .status(400)
-        .json({ error: { meesage: "Email should be in valid format" } });
+        .json({ error: { message: "Email should be in valid format" } });
     }
 
     if (password.length < 6) {
@@ -51,7 +51,7 @@ export async function register(req, res, next) {
     const newResponse = newUser.toObject();
     delete newResponse.password;
 
-    res.status(201).json({ user: newResponse });
+    return res.status(201).json({ user: newResponse });
   } catch (error) {
     next(error);
   }
@@ -74,9 +74,9 @@ export async function login(req, res, next) {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      res
+      return res
         .status(401)
-        .json({ error: { message: "Email or password is required" } });
+        .json({ error: { message: "Invalid credentials" } });
     }
 
     const user = await User.findOne({ email: email.toLowerCase() }).select(
@@ -84,12 +84,16 @@ export async function login(req, res, next) {
     );
 
     if (!user)
-      res.status(401).json({ error: { message: "Invalid credentials" } });
+      return res
+        .status(401)
+        .json({ error: { message: "Invalid credentials" } });
 
     const verifiedPassword = await bcrypt.compare(password, user.password);
 
     if (!verifiedPassword)
-      res.status(401).json({ error: { message: "Invalid credentials" } });
+      return res
+        .status(401)
+        .json({ error: { message: "Invalid credentials" } });
 
     const token = signToken({
       userId: user._id,
@@ -100,7 +104,7 @@ export async function login(req, res, next) {
     const userObj = user.toObject();
     delete userObj.password;
 
-    res.status(200).json({ token, user: userObj });
+    return res.status(200).json({ token, user: userObj });
   } catch (error) {
     next(error);
   }
@@ -114,7 +118,14 @@ export async function login(req, res, next) {
  */
 export async function me(req, res, next) {
   try {
-    // Your code here
+    if (!req.user) {
+      return res.status(401).json({ error: { message: "Invalid token" } });
+    }
+
+    const user = req.user.toObject();
+    delete user.password;
+
+    return res.status(200).json({ user });
   } catch (error) {
     next(error);
   }
